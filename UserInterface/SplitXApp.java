@@ -2,6 +2,7 @@ package UserInterface;
 
 import Methods.Authorization;
 import Methods.Admin;
+import Methods.User;
 
 import java.util.Scanner;
 
@@ -68,7 +69,7 @@ public class SplitXApp {
                                 Admin.deleteExpense(expenseId);
                                 break;
                             case 7:
-                                System.out.println("Exit");
+                                System.out.println("Thank you for using SplitX!");
                                 cont = false;
                                 break;
                             default:
@@ -82,38 +83,61 @@ public class SplitXApp {
                             userPassword = sc.nextLine();
                         }
 
+                        int userId = Authorization.getUserId(userName);
+
                         System.out.println("Welcome " + userName + "!");
                         System.out.println("1. Display all expenses");
                         System.out.println("2. Display single expense details");
                         System.out.println("3. Display expenses to pay");
                         System.out.println("4. Display expenses to receive");
                         System.out.println("5. Create expense");
-                        System.out.println("6. Pay expense");
-                        System.out.println("7. Mark share received");
-                        System.out.println("8. Exit");
+                        System.out.println("6. Delete expense");
+                        System.out.println("7. Pay expense");
+                        System.out.println("8. Mark share received");
+                        System.out.println("9. Exit");
                         System.out.println("Enter your choice: ");
 
                         int userChoice = sc.nextInt();
 
                         switch (userChoice) {
                             case 1:
-                                System.out.println("Display expenses");
+                                User.displayAllExpensesOfSpecificUser(userId);
                                 break;
                             case 2:
-                                System.out.println("Display expenses to pay");
+                                System.out.println("Enter expense id : ");
+                                int expenseId = sc.nextInt();
+                                User.displaySingleExpense(expenseId);
                                 break;
                             case 3:
-                                System.out.println("Display expenses to receive");
+                                User.displayAllExpenseToPay(userId);
                                 break;
                             case 4:
-                                System.out.println("Display total expenses");
+                                User.displayExpensesToReceive(userId);
                                 break;
                             case 5:
-                                System.out.println("Exit");
+                                User.addExpense(userId);
+                                break;
+                            case 6:
+                                System.out.println("Enter expense id : ");
+                                expenseId = sc.nextInt();
+                                User.deleteExpense(expenseId);
+                                break;
+                            case 7:
+                                System.out.println("Enter expense id : ");
+                                expenseId = sc.nextInt();
+                                User.payExpense(userId, expenseId);
+                                break;
+                            case 8:
+                                System.out.println("Enter expense id : ");
+                                expenseId = sc.nextInt();
+                                System.out.println("Enter user name : ");
+                                String userNameToMark = sc.nextLine();
+                                User.markReceived(expenseId, userNameToMark);
+                                break;
+                            case 9:
+                                System.out.println("Thank you for using SplitX!");
                                 cont = false;
                                 break;
-                            default:
-                                System.out.println("Invalid choice");
                         }
                     }
                     break;

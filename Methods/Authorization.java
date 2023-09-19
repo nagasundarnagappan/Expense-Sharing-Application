@@ -43,4 +43,9 @@ public class Authorization {
         return stmt.executeQuery(UserQueries.getUserByName(userName)).getString("user_password")
                 .equals(userPassword);
     }
+
+    public static int getUserId(String userName) throws Exception {
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery(UserQueries.getUserByName(userName)).getInt("user_id");
+    }
 }

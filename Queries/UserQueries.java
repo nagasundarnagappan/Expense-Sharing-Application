@@ -43,4 +43,8 @@ public class UserQueries {
     public static String getUserNameWithId(int userId) {
         return "SELECT user_name FROM users WHERE user_id = " + userId;
     }
+
+    public static String getUserIdWithName(String userName) {
+        return "SELECT user_id FROM users WHERE user_name = '" + userName + "'";
+    }
 }

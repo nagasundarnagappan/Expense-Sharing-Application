@@ -19,19 +19,26 @@ public class ExpenseQueries {
         return "SELECT * FROM expenses WHERE expense_id = " + expenseId;
     }
 
+    public static String getExpenseByUserId(int userId) {
+        return "SELECT * FROM expenses WHERE created_by = " + userId;
+    }
+
     public static String getExpenseByName(String expenseName) {
         return "SELECT * FROM expenses WHERE expense_name = '" + expenseName + "'";
     }
 
-    public static String insertExpense(String expenseName, int expenseAmount, String expenseDate, int userId) {
-        return "INSERT INTO expenses (expense_name, expense_amount, expense_date, user_id) VALUES ('" + expenseName
-                + "', '" + expenseAmount + "', '" + expenseDate + "', '" + userId + "')";
+    public static String addExpense() {
+        return "INSERT INTO expenses (expense_name, expense_description, expense_amount, expense_date, created_by, shared_users) VALUES (?, ?, ?, ?, ?)";
     }
 
     public static String updateExpense(int expenseId, String expenseName, int expenseAmount, String expenseDate,
             int userId) {
         return "UPDATE expenses SET expense_name = '" + expenseName + "', expense_amount = '" + expenseAmount
                 + "', expense_date = '" + expenseDate + "', user_id = '" + userId + "' WHERE expense_id = " + expenseId;
+    }
+
+    public static String updateRemaining() {
+        return "UPDATE expenses SET shared_users = ? WHERE expense_id = ?";
     }
 
     public static String deleteExpense(int expenseId) {
