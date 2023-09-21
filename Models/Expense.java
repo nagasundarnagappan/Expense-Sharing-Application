@@ -13,20 +13,17 @@ public class Expense {
 
     private int createdBy;
 
-    private int[] sharedUsers;
-
     public Expense() {
     }
 
     public Expense(int expenseId, String expenseName, String expenseDescription, double expenseAmount,
-            String expenseDate, int createdBy, int[] sharedUsers) {
+            String expenseDate, int createdBy) {
         this.expenseId = expenseId;
         this.expenseName = expenseName;
         this.expenseDescription = expenseDescription;
         this.expenseAmount = expenseAmount;
         this.expenseDate = expenseDate;
         this.createdBy = createdBy;
-        this.sharedUsers = sharedUsers;
     }
 
     public int getExpenseId() {
@@ -75,13 +72,5 @@ public class Expense {
 
     public void setCreatedBy(int createdBy) {
         this.createdBy = createdBy;
-    }
-
-    public int[] getSharedUsers() {
-        return sharedUsers;
-    }
-
-    public void setSharedUsers(int[] sharedUsers) {
-        this.sharedUsers = sharedUsers;
     }
 }

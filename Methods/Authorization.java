@@ -1,6 +1,7 @@
 package Methods;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,7 +15,14 @@ public class Authorization {
 
     public static boolean checkIfUsernameIsUnique(String userName) throws Exception {
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery(UserQueries.getUserByName(userName)) == null;
+        ResultSet rs = stmt.executeQuery(UserQueries.getUserByName(userName));
+
+        if (rs.next()) {
+            System.out.println("Username already exists!" + rs.getString("user_name"));
+            return false;
+        }
+
+        return true;
     }
 
     public static boolean checkPasswordStrength(String userPassword) {
@@ -40,12 +48,29 @@ public class Authorization {
 
     public static boolean signIn(String userName, String userPassword) throws Exception {
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery(UserQueries.getUserByName(userName)).getString("user_password")
-                .equals(userPassword);
+        ResultSet rs = stmt.executeQuery(UserQueries.getUserByName(userName));
+
+        System.out.println("User Name : " + userName);
+        System.out.println("User Password : " + userPassword);
+
+        while (rs.next()) {
+            System.out.println("User Name : " + rs.getString("user_name"));
+            String pw = rs.getString("user_password");
+            System.out.println("User Password : " + pw);
+            if (pw.equals(userPassword)) {
+                System.out.println("User signed in successfully!");
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static int getUserId(String userName) throws Exception {
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery(UserQueries.getUserByName(userName)).getInt("user_id");
+        ResultSet rs = stmt.executeQuery(UserQueries.getUserByName(userName));
+        rs.next();
+
+        return rs.getInt("user_id");
     }
 }

@@ -8,7 +8,7 @@ public class UserQueries {
     Connection conn = new Connect().getConnection();
 
     public static String createTableIfNotExists() {
-        return "CREATE TABLE IF NOT EXISTS users (user_id INT NOT NULL AUTO_INCREMENT, user_name VARCHAR(255) NOT NULL, user_password VARCHAR(255) NOT NULL, PRIMARY KEY (user_id, user_name))";
+        return "CREATE TABLE IF NOT EXISTS users (user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_name VARCHAR(255) NOT NULL, user_password VARCHAR(255) NOT NULL)";
     }
 
     public static String getAllUsers() {

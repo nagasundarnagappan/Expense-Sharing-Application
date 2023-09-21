@@ -1,16 +1,22 @@
 package Database;
 
+import Queries.*;
+
 import java.sql.*;
 
-public class Connect {
+public class Connect extends DatabaseDetails {
     private Connection conn = null;
-    DatabaseDetails dbDetails = new DatabaseDetails();
 
     public Connect() {
         try {
-            Class.forName(dbDetails.getDriver());
-            conn = DriverManager.getConnection(dbDetails.getUrl(), dbDetails.getUsername(),
-                    dbDetails.getPassword());
+            Class.forName(driver);
+            conn = DriverManager.getConnection(url, username, getPassword());
+
+            Statement stmt = conn.createStatement();
+
+            stmt.executeUpdate(UserQueries.createTableIfNotExists());
+            stmt.executeUpdate(ExpenseQueries.createTableIfNotExists());
+            stmt.executeUpdate(SharesQueries.createTableIfNotExists());
         } catch (Exception e) {
             System.out.println(e);
         }

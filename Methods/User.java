@@ -4,15 +4,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
-
-import java.util.Scanner;
+import java.text.SimpleDateFormat;
+import java.sql.Date;
+import java.util.ArrayList;
 
 import Queries.UserQueries;
 import Queries.ExpenseQueries;
+import Queries.SharesQueries;
 
 import Database.Connect;
 
-public class User {
+public class User implements CommonMethods {
     public static Connection conn = new Connect().getConnection();
 
     public static void displayAllExpensesOfSpecificUser(int userId) throws Exception {
@@ -24,14 +26,14 @@ public class User {
 
         while (rs.next()) {
             System.out.println(rs.getInt("expense_id") + "\t\t" + rs.getString("expense_name") + "\t\t"
-                    + rs.getInt("expense_amount") + "\t\t" + rs.getString("expense_date") + "\t\t"
-                    + rs.getInt("user_id"));
+                    + rs.getInt("expense_amount") + "\t\t" + rs.getString("expense_date"));
         }
     }
 
-    public static void displaySingleExpense(int expenseId) throws Exception {
+    public void displaySingleExpense(int expenseId) throws Exception {
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(ExpenseQueries.getExpenseById(expenseId));
+        rs.next();
 
         System.out.println("-------------------------------------------------------");
         System.out.println("Expense Id : " + rs.getInt("expense_id"));
@@ -41,46 +43,35 @@ public class User {
         System.out.println("Expense Date : " + rs.getString("expense_date"));
         System.out.println("Shared between : ");
 
-        int members[] = (int[]) rs.getArray("sharedUsers").getArray();
+        PreparedStatement pstmt = conn.prepareStatement(SharesQueries.getSharesByExpenseId(expenseId));
+        ResultSet rs2 = pstmt.executeQuery();
 
-        for (int member : members) {
-            System.out.println(stmt.executeQuery(UserQueries.getUserNameWithId(member)));
+        while (rs2.next()) {
+            ResultSet rss = stmt.executeQuery(UserQueries.getUserNameWithId(rs2.getInt("user_id")));
+            rss.next();
+            System.out.println(rss.getString("user_name"));
         }
 
         System.out.println("-------------------------------------------------------");
     }
 
-    public static void addExpense(int userId) throws Exception {
+    public static void addExpense(int userId, String expenseName, String expenseDescription, double expenseAmount,
+            String expenseDate, String[] sharedUsersNames) throws Exception {
         Statement stmt = conn.createStatement();
-        Scanner sc = new Scanner(System.in);
 
-        System.out.println("Enter the expense name : ");
-        String expenseName = sc.nextLine();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        java.util.Date parsedDate = dateFormat.parse(expenseDate);
+        Date sqlDate = new Date(parsedDate.getTime());
 
-        System.out.println("Enter the expense description : ");
-        String expenseDescription = sc.nextLine();
+        int numberOfUsers = sharedUsersNames.length;
 
-        System.out.println("Enter the expense amount : ");
-        double expenseAmount = sc.nextDouble();
-
-        System.out.println("Enter the expense date : ");
-        String expenseDate = sc.nextLine();
-
-        System.out.println("Enter the number of users to share the expense with : ");
-        int numberOfUsers = sc.nextInt();
-
-        String sharedUsersNames[] = new String[numberOfUsers];
+        int sharedUsers[] = new int[numberOfUsers];
 
         for (int i = 0; i < numberOfUsers; i++) {
-            System.out.println("Enter the user name of the user to share the expense with : ");
-            sharedUsersNames[i] = sc.nextLine();
-        }
+            ResultSet rs2 = stmt.executeQuery(UserQueries.getUserIdWithName(sharedUsersNames[i]));
+            rs2.next();
 
-        Integer[] sharedUsers = new Integer[numberOfUsers];
-
-        for (int i = 0; i < numberOfUsers; i++) {
-            ResultSet rs = stmt.executeQuery(UserQueries.getUserIdWithName(sharedUsersNames[i]));
-            sharedUsers[i] = rs.getInt("user_id");
+            sharedUsers[i] = rs2.getInt("user_id");
         }
 
         PreparedStatement pstmt = conn.prepareStatement(ExpenseQueries.addExpense());
@@ -88,106 +79,112 @@ public class User {
         pstmt.setString(1, expenseName);
         pstmt.setString(2, expenseDescription);
         pstmt.setDouble(3, expenseAmount);
-        pstmt.setString(4, expenseDate);
+        pstmt.setDate(4, sqlDate);
         pstmt.setInt(5, userId);
-        pstmt.setArray(6, conn.createArrayOf("INTEGER", sharedUsers));
 
         pstmt.executeUpdate();
 
+        ResultSet rss = stmt.executeQuery(ExpenseQueries.getExpenseByName(expenseName));
+        rss.next();
+
+        int expenseId = rss.getInt("expense_id");
+
+        pstmt = conn.prepareStatement(SharesQueries.insertShares());
+
+        for (int i = 0; i < numberOfUsers; i++) {
+            pstmt.setInt(1, expenseId);
+            pstmt.setInt(2, sharedUsers[i]);
+
+            pstmt.executeUpdate();
+        }
+
         System.out.println("Expense added successfully");
-        sc.close();
     }
 
-    public static void deleteExpense(int expenseId) throws Exception {
+    public void deleteExpense(int expenseId) throws Exception {
         Statement stmt = conn.createStatement();
         stmt.executeUpdate(ExpenseQueries.deleteExpense(expenseId));
 
+        Statement stmt2 = conn.createStatement();
+        stmt2.executeUpdate(SharesQueries.deleteSharesByExpenseId(expenseId));
+
         System.out.println("Expense deleted successfully");
+
     }
 
     public static void payExpense(int userId, int expenseId) throws Exception {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery(ExpenseQueries.getExpenseById(expenseId));
-
-        int members[] = (int[]) rs.getArray("sharedUsers").getArray();
-
-        Integer newMembers[] = new Integer[members.length - 1];
-        int j = 0;
-        for (int i = 0; i < members.length; i++) {
-            if (members[i] != userId) {
-                newMembers[j] = members[i];
-                j++;
-            }
-        }
-
-        PreparedStatement pstmt = conn.prepareStatement(ExpenseQueries.updateRemaining());
-
-        pstmt.setInt(2, expenseId);
-        pstmt.setArray(1, conn.createArrayOf("INTEGER", newMembers));
+        stmt.execute(SharesQueries.deleteSharesByUserIdAndExpenseId(userId, expenseId));
 
         System.out.println("Expense paid successfully");
     }
 
     public static void markReceived(int expenseId, String userName) throws Exception {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery(ExpenseQueries.getExpenseById(expenseId));
 
-        int members[] = (int[]) rs.getArray("sharedUsers").getArray();
+        ResultSet rs = stmt.executeQuery(UserQueries.getUserIdWithName(userName));
+        rs.next();
 
-        int userId = stmt.executeQuery(UserQueries.getUserByName(userName)).getInt("user_id");
+        int userId = rs.getInt("user_id");
 
-        Integer newMembers[] = new Integer[members.length - 1];
-        int j = 0;
-        for (int i = 0; i < members.length; i++) {
-            if (members[i] != userId) {
-                newMembers[j] = members[i];
-                j++;
-            }
-        }
-
-        PreparedStatement pstmt = conn.prepareStatement(ExpenseQueries.updateRemaining());
-
-        pstmt.setInt(2, expenseId);
-        pstmt.setArray(1, conn.createArrayOf("INTEGER", newMembers));
+        stmt.execute(SharesQueries.deleteSharesByUserIdAndExpenseId(userId, expenseId));
 
         System.out.println("Expense marked as received successfully");
     }
 
     public static void displayExpensesToReceive(int userId) throws Exception {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery(ExpenseQueries.getExpenseByUserId(userId));
+        ResultSet rs = stmt.executeQuery(ExpenseQueries.getAllExpenses());
 
         System.out.println("All the expenses to be paid to you");
         System.out.println("Expense ID\tExpense Name\t\tExpense Amount\t\tExpense Date");
 
-        while (rs.next()) {
-            int members[] = (int[]) rs.getArray("sharedUsers").getArray();
+        ArrayList<Integer> expIds = new ArrayList<Integer>();
+        ArrayList<Integer> wantExpIds = new ArrayList<Integer>();
 
-            if (members.length > 0)
-                System.out.println(rs.getInt("expense_id") + "\t\t" + rs.getString("expense_name") + "\t\t"
-                        + rs.getInt("expense_amount") + "\t\t" + rs.getString("expense_date") + "\t\t"
-                        + rs.getInt("user_id"));
+        while (rs.next()) {
+            expIds.add(rs.getInt("expense_id"));
+        }
+
+        for (int id : expIds) {
+            ResultSet rss = stmt.executeQuery(SharesQueries.numberOfSharesByExpenseId(id));
+            rss.next();
+
+            int count = (rss.getInt("COUNT(*)"));
+
+            if (count > 0) {
+                wantExpIds.add(id);
+            }
+        }
+
+        for (int id : wantExpIds) {
+            ResultSet rss = stmt.executeQuery(ExpenseQueries.getExpenseById(id));
+            rss.next();
+
+            System.out.println(rss.getInt("expense_id") + "\t\t" + rss.getString("expense_name") + "\t\t"
+                    + rss.getInt("expense_amount") + "\t\t" + rss.getString("expense_date"));
         }
     }
 
     public static void displayAllExpenseToPay(int userId) throws Exception {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery(ExpenseQueries.getAllExpenses());
+        ResultSet rs = stmt.executeQuery(SharesQueries.getSharesByUserId(userId));
 
         System.out.println("All the expenses to be paid by you");
         System.out.println("Expense ID\tExpense Name\t\tExpense Amount\t\tExpense Date");
 
-        while (rs.next()) {
-            int members[] = (int[]) rs.getArray("sharedUsers").getArray();
+        ArrayList<Integer> expIds = new ArrayList<Integer>();
 
-            for (int member : members) {
-                if (member == userId) {
-                    System.out.println(rs.getInt("expense_id") + "\t\t" + rs.getString("expense_name") + "\t\t"
-                            + rs.getInt("expense_amount") + "\t\t" + rs.getString("expense_date") + "\t\t"
-                            + rs.getInt("user_id"));
-                    break;
-                }
-            }
+        while (rs.next()) {
+            expIds.add(rs.getInt("expense_id"));
+        }
+
+        for (int id : expIds) {
+            ResultSet rss = stmt.executeQuery(ExpenseQueries.getExpenseById(id));
+            rss.next();
+
+            System.out.println(rss.getInt("expense_id") + "\t\t" + rss.getString("expense_name") + "\t\t"
+                    + rss.getInt("expense_amount") + "\t\t" + rss.getString("expense_date"));
         }
     }
 }

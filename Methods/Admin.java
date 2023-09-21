@@ -9,10 +9,10 @@ import Queries.ExpenseQueries;
 
 import Database.Connect;
 
-public class Admin {
+public class Admin implements CommonMethods {
     public static Connection conn = new Connect().getConnection();
 
-    public static void displayAllUsers() throws Exception {
+    public static void viewUser() throws Exception {
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(UserQueries.getAllUsers());
 
@@ -41,19 +41,20 @@ public class Admin {
         while (rs.next()) {
             System.out.println(rs.getInt("expense_id") + "\t\t" + rs.getString("expense_name") + "\t\t"
                     + rs.getInt("expense_amount") + "\t\t" + rs.getString("expense_date") + "\t\t"
-                    + rs.getInt("user_id"));
+                    + rs.getInt("created_by"));
         }
     }
 
-    public static void deleteExpense(int expenseId) throws Exception {
+    public void deleteExpense(int expenseId) throws Exception {
         Statement stmt = conn.createStatement();
         stmt.execute(ExpenseQueries.deleteExpense(expenseId));
         System.out.println("Expense deleted successfully!");
     }
 
-    public static void viewIndividualExpense(int expenseId) throws Exception {
+    public void displaySingleExpense(int expenseId) throws Exception {
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(ExpenseQueries.getExpenseById(expenseId));
+        rs.next();
 
         System.out.println("-------------------------------------------------------");
         System.out.println("Expense Id : " + rs.getInt("expense_id"));
@@ -65,9 +66,10 @@ public class Admin {
         System.out.println("-------------------------------------------------------");
     }
 
-    public static void viewIndividualUser(int userId) throws Exception {
+    public static void viewUser(int userId) throws Exception {
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(UserQueries.getUserById(userId));
+        rs.next();
 
         System.out.println("-------------------------------------------------------");
         System.out.println("User Id : " + rs.getInt("user_id"));
